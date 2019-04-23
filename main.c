@@ -422,15 +422,22 @@ static int portbyname(const char *name)
 static bool makeaddr(struct sockaddr_in *sa, const char *host, const char *port)
 {
 	int tmp;
+	struct hostent *hent = NULL;
 
 	if ((tmp = portbyname(port)) < 0)
 		return false;
 
-	memset(sa, 0, sizeof(*sa));
-	if (inet_aton(host, &sa->sin_addr) == 0) {
-		msg_warn("inet_aton %s failed", host);
+	// Alex, 2019-3-22, gethostbyname
+	if ((hent = gethostbyname(host)) == NULL) {
+		msg_warn("gethostbyname %s failed", host);
 		return false;
 	}
+	memset(sa, 0, sizeof(*sa));
+	bcopy((void*)hent->h_addr,(void*)&sa->sin_addr,hent->h_length);
+	//if (inet_aton(hent->h_addr, &sa->sin_addr) == 0) {
+	//	msg_warn("inet_aton %s failed", hent->h_name);
+	//	return false;
+	//}
 
 	sa->sin_family = AF_INET;
 	sa->sin_port = tmp;
